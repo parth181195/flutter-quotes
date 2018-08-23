@@ -1,8 +1,6 @@
-# quotes
+# Quotes
 
-A new Flutter project.
+a simple flutter app with firebase auth and cloudfirestore
 
-## Getting Started
 
-For help getting started with Flutter, view our online
-[documentation](https://flutter.io/).
+<img src="./preview/preview.gif" height="400" alt="Screenshot"/>
