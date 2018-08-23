@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "962552468508",
+    "firebase_url": "https://quotes-c95d2.firebaseio.com",
+    "project_id": "quotes-c95d2",
+    "storage_bucket": "quotes-c95d2.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:962552468508:android:45df192d07795ff6",
+        "android_client_info": {
+          "package_name": "inktwig.quotes"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "962552468508-21cccdmum8fv5r9h2j2lfu1ipvokt9l8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "inktwig.quotes",
+            "certificate_hash": "1cb4da2af8ff6408e2d99fe16a2a352fe2e2303c"
+          }
+        },
+        {
+          "client_id": "962552468508-b07dhppmjmvgkgv3o1vqq3c5hnnmchgd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCNpnbgN0SOWUCr9lXbi4giU74jtUsGsDg"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "962552468508-b07dhppmjmvgkgv3o1vqq3c5hnnmchgd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
