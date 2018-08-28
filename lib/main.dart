@@ -56,27 +56,8 @@ class _RootPageState extends State<RootPage> {
 
   @override
   Widget build(BuildContext context) {
-    switch (authStatus) {
-      case AuthStatus.notDetermined:
-        return _buildWaitingScreen();
-        break;
-      case AuthStatus.loggedin:
-        return QuotesHome();
-        break;
-      case AuthStatus.notLoggedin:
         return LoginPage();
-        break;
-      default:
-    }
   }
-  
-  Widget _buildWaitingScreen() {
-    return Scaffold(
-      body: Container(
-        alignment: Alignment.center,
-        child: CircularProgressIndicator(),
-      ),
-    );
-  }
+
 
 }
