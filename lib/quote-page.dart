@@ -20,6 +20,7 @@ class _QuotesHomeState extends State<QuotesHome> {
   CollectionReference quotesRef = Firestore.instance.collection('quotes');
   List<DocumentSnapshot> quotes;
   DocumentSnapshot userData;
+  List<dynamic> bookmarks = [];
   @override
   void initState() {
     // TODO: implement initState
@@ -39,6 +40,9 @@ class _QuotesHomeState extends State<QuotesHome> {
         print(doc.documents[0].data);
         setState(() {
           userData = doc.documents[0];
+          bookmarks = doc.documents[0].data['bookmarks'];
+          bookmarks.add('value');
+          print(bookmarks);
         });
       });
     });
@@ -55,11 +59,23 @@ class _QuotesHomeState extends State<QuotesHome> {
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
+        drawer: new Drawer(
+          child: Text('data'),
+        ),
         appBar: AppBar(
           backgroundColor: Colors.white,
+          leading: IconButton(
+            icon: Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
           actions: <Widget>[
             new IconButton(
-              icon: Icon(Icons.exit_to_app,color: Colors.black,),
+              icon: Icon(
+                Icons.exit_to_app,
+                color: Colors.black,
+              ),
               onPressed: () async {
                 bool isloggedOut = await Fbapi.logOut();
                 print(isloggedOut);
@@ -88,7 +104,7 @@ class _QuotesHomeState extends State<QuotesHome> {
         ),
         body: SizedBox.expand(
           child: new Container(
-            // padding:   
+            // padding:
             color: Colors.white,
             child: quotes != null
                 ? PageView.builder(
@@ -97,30 +113,88 @@ class _QuotesHomeState extends State<QuotesHome> {
                     itemBuilder: (context, index) {
                       return Padding(
                         padding: const EdgeInsets.all(12.0),
-                        child: new Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            Text(quotes[index].data['text'],
-                                style: new TextStyle(
-                                    fontFamily: 'Playfair Display',
-                                    fontSize: 40.0)),
-                            Padding(
-                              padding: EdgeInsets.all(10.0),
-                            ),
-                            Text(
-                                quotes[index].data.containsKey('author')
-                                    ? quotes[index].data['author']
-                                    : 'A wise Person',
-                                style: new TextStyle(
-                                    fontFamily: 'Playfair Display',
-                                    color: Color(0xffaaaaaa),
-                                    fontSize: 20.0)),
-                                    Padding(
-                              padding: EdgeInsets.all(60.0),
-                            ),
-                          ],
-                        ),
+                        child:
+                            new Stack(fit: StackFit.expand, children: <Widget>[
+                          Align(
+                              alignment: Alignment.center,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: <Widget>[
+                                  Text(quotes[index].data['text'],
+                                      style: new TextStyle(
+                                          fontFamily: 'Playfair Display',
+                                          fontSize: 40.0)),
+                                  Padding(
+                                    padding: EdgeInsets.all(10.0),
+                                  ),
+                                  Text(
+                                      quotes[index].data.containsKey('author')
+                                          ? quotes[index].data['author']
+                                          : 'A wise Person',
+                                      style: new TextStyle(
+                                          fontFamily: 'Playfair Display',
+                                          color: Color(0xffaaaaaa),
+                                          fontSize: 20.0)),
+                                  Padding(
+                                    padding: EdgeInsets.all(30.0),
+                                  ),
+                                ],
+                              )),
+                          Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  new IconButton(
+                                    icon: Icon(
+                                      bookmarks.contains(
+                                              quotes[index].documentID)
+                                          ? Icons.bookmark
+                                          : Icons.bookmark_border,
+                                      color: Colors.black,
+                                    ),
+                                    onPressed: () async {
+                                      print(bookmarks
+                                          .contains(quotes[index].documentID));
+                                      Map data = userData.data;
+                                      bool addedBookmark = !bookmarks
+                                          .contains(quotes[index].documentID);
+                                      if (bookmarks
+                                          .contains(quotes[index].documentID))
+                                        data['bookmarks'] = new List.from(
+                                            bookmarks)
+                                          ..remove(quotes[index].documentID);
+                                      else
+                                        data['bookmarks'] =
+                                            new List.from(bookmarks)
+                                              ..add(quotes[index].documentID);
+                                      userData.reference
+                                          .updateData(data)
+                                          .whenComplete(() {
+                                        print('bokkmark added');
+                                        Scaffold.of(context)
+                                            .showSnackBar(SnackBar(
+                                          content: Text(addedBookmark
+                                              ? 'Quote added to bookmarks'
+                                              : 'Quote removed from bookmarks'),
+                                          duration: new Duration(seconds: 2),
+                                        ));
+                                        setState(() {});
+                                      });
+                                      // if (bookmarks
+                                      //     .contains(quotes[index].documentID)) {
+                                      //       data['bookmarks'] = bookmarks.remove(quotes[index].documentID);
+                                      // } else {
+                                      //   data['bookmarks'] =
+                                      //       new List.from(bookmarks)
+                                      //         ..add(quotes[index].documentID);
+                                      // }
+                                    },
+                                  )
+                                ]),
+                          )
+                        ]),
                       );
                     },
                   )
@@ -139,3 +213,32 @@ class _QuotesHomeState extends State<QuotesHome> {
         ));
   }
 }
+
+// child: new Column(
+//                           mainAxisAlignment: MainAxisAlignment.center,
+//                           crossAxisAlignment: CrossAxisAlignment.stretch,
+//                           children: <Widget>[
+//                             Text(quotes[index].data['text'],
+//                                 style: new TextStyle(
+//                                     fontFamily: 'Playfair Display',
+//                                     fontSize: 40.0)),
+//                             Padding(
+//                               padding: EdgeInsets.all(10.0),
+//                             ),
+//                             Text(
+//                                 quotes[index].data.containsKey('author')
+//                                     ? quotes[index].data['author']
+//                                     : 'A wise Person',
+//                                 style: new TextStyle(
+//                                     fontFamily: 'Playfair Display',
+//                                     color: Color(0xffaaaaaa),
+//                                     fontSize: 20.0)),
+//                             Padding(
+//                               padding: EdgeInsets.all(60.0),
+//                             ),
+//                             new Positioned(
+//                               bottom: 0.0,
+//                               child: Text('part'),
+//                             )
+//                           ],
+//                         ),
