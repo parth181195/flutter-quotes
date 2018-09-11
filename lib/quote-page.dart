@@ -1,17 +1,61 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:share/share.dart';
-import 'package:quotes/api.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/rendering.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
+import 'package:share/share.dart';
+import 'package:quotes/api.dart';
+
 class QuotesHome extends StatefulWidget {
-  @override
-  _QuotesHomeState createState() => new _QuotesHomeState();
+  _QuotesHomeState createState() => _QuotesHomeState();
 }
 
 class _QuotesHomeState extends State<QuotesHome> {
+  @override
+  Widget build(BuildContext context) {
+    return new Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        actions: <Widget>[
+          new IconButton(
+            icon: Icon(
+              Icons.exit_to_app,
+              color: Colors.black,
+            ),
+            onPressed: () async {
+              await Fbapi.logOut().catchError((e) => print(e));
+            },
+          )
+        ],
+        elevation: 0.0,
+        title: Text('Quotes',
+            textAlign: TextAlign.center,
+            style: new TextStyle(
+                fontFamily: 'Playfair Display',
+                color: Colors.black,
+                height: 0.5,
+                fontSize: 30.0)),
+        centerTitle: true,
+      ),
+      body: QuotesWidget(),
+    );
+  }
+}
+
+class QuotesWidget extends StatefulWidget {
+  @override
+  _QuotesWidgetState createState() => new _QuotesWidgetState();
+}
+
+class _QuotesWidgetState extends State<QuotesWidget> {
   PageController pageViewController;
   PageStorage page;
   StreamSubscription<QuerySnapshot> usersubscription;
@@ -21,6 +65,8 @@ class _QuotesHomeState extends State<QuotesHome> {
   List<DocumentSnapshot> quotes;
   DocumentSnapshot userData;
   List<dynamic> bookmarks = [];
+  GlobalKey _globalKey = new GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +93,51 @@ class _QuotesHomeState extends State<QuotesHome> {
     });
   }
 
+  Future<String> get _localPath async {
+    final directory = await getExternalStorageDirectory();
+    Directory quoteFolder = Directory('${directory.path}/quotes');
+    if (!quoteFolder.existsSync()) {
+      quoteFolder.createSync();
+    }
+    print(directory.createTemp());
+    return directory.path;
+  }
+
+  Future<File> get _localFile async {
+    final path = await _localPath;
+    return File('$path/quotes/share.png');
+  }
+
+  Future<File> _capturePng() async {
+    try {
+      RenderRepaintBoundary boundary =
+          _globalKey.currentContext.findRenderObject();
+      // RenderRepaintBoundary boundary =
+      //     globalKey.currentContext.findRenderObject();
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      ByteData byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      var pngBytes = byteData.buffer.asUint8List();
+      debugPrint(base64Encode(pngBytes));
+
+      final file = await _localFile;
+
+      // Write the file
+      print(_localFile.toString());
+      print(_localPath.toString());
+      print(file.path);
+      file.writeAsBytesSync(pngBytes);
+      Scaffold.of(context).showSnackBar(SnackBar(
+        content: Text('Image Stored at ${file.path}'),
+        action:SnackBarAction(label: 'open image',onPressed: (){OpenFile.open(file.path);},),
+      ));
+      setState(() {});
+      return file;
+    } catch (e) {
+      print(e);
+    }
+  }
+
   String getAuthor(index) {
     return quotes[index].data.containsKey('author')
         ? quotes[index].data['author']
@@ -59,18 +150,22 @@ class _QuotesHomeState extends State<QuotesHome> {
       child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
         new IconButton(
           icon: Icon(
-            bookmarks.contains(
-                    quotes[index].documentID)
+            Icons.file_download,
+            color: Colors.black,
+          ),
+          onPressed: _capturePng,
+        ),
+        new IconButton(
+          icon: Icon(
+            bookmarks.contains(quotes[index].documentID)
                 ? Icons.bookmark
                 : Icons.bookmark_border,
             color: Colors.black,
           ),
           onPressed: () async {
-            print(bookmarks
-                .contains(quotes[index].documentID));
+            print(bookmarks.contains(quotes[index].documentID));
             Map data = userData.data;
-            if (bookmarks
-                .contains(quotes[index].documentID))
+            if (bookmarks.contains(quotes[index].documentID))
               data['bookmarks'] = new List.from(bookmarks)
                 ..remove(quotes[index].documentID);
             else
@@ -90,9 +185,7 @@ class _QuotesHomeState extends State<QuotesHome> {
             color: Colors.black,
           ),
           onPressed: () {
-            Share.share(quotes[index].data['text'] +
-                '\n-' +
-                getAuthor(index));
+            // Share.share(quotes[index].data['text'] + '\n-' + getAuthor(index));
           },
         )
       ]),
@@ -109,54 +202,23 @@ class _QuotesHomeState extends State<QuotesHome> {
 
   @override
   Widget build(BuildContext context) {
-    return new Scaffold(
-        drawer: new Drawer(
-          child: Text('data'),
-        ),
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          leading: IconButton(
-            icon: Icon(Icons.menu),
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
-          ),
-          actions: <Widget>[
-            new IconButton(
-              icon: Icon(
-                Icons.exit_to_app,
-                color: Colors.black,
-              ),
-              onPressed: () async {
-                await Fbapi.logOut().catchError((e) => print(e));
-              },
-            )
-          ],
-          elevation: 0.0,
-          title: Text('Quotes',
-              textAlign: TextAlign.center,
-              style: new TextStyle(
-                  fontFamily: 'Playfair Display',
-                  color: Colors.black,
-                  height: 0.5,
-                  fontSize: 30.0)),
-          centerTitle: true,
-        ),
-        body: SizedBox.expand(
-          child: new Container(
-            // padding:
-            color: Colors.white,
-            child: quotes != null
-                ? PageView.builder(
-                    physics: BouncingScrollPhysics(),
-                    controller: pageViewController,
-                    itemCount: quotes.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child:
-                            new Stack(fit: StackFit.expand, children: <Widget>[
-                          Align(
+    return SizedBox.expand(
+      child: new Container(
+        // padding:
+        color: Colors.white,
+        child: quotes != null
+            ? PageView.builder(
+                physics: BouncingScrollPhysics(),
+                controller: pageViewController,
+                itemCount: quotes.length,
+                itemBuilder: (context, index) {
+                  return new Stack(fit: StackFit.expand, children: <Widget>[
+                    RepaintBoundary(
+                        key: _globalKey,
+                        child: Container(
+                          padding: EdgeInsets.all(20.0),
+                          color: Colors.white,
+                          child: Align(
                               alignment: Alignment.center,
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -179,23 +241,26 @@ class _QuotesHomeState extends State<QuotesHome> {
                                   ),
                                 ],
                               )),
-                              getBookmarkbar(index)
-                        ]),
-                      );
-                    },
-                  )
-                : Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        CircularProgressIndicator(
-                          valueColor: new AlwaysStoppedAnimation(Colors.black),
-                          strokeWidth: 1.0,
-                        )
-                      ],
-                    ),
-                  ),
-          ),
-        ));
+                        )),
+                    Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: getBookmarkbar(index),
+                    )
+                  ]);
+                },
+              )
+            : Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    CircularProgressIndicator(
+                      valueColor: new AlwaysStoppedAnimation(Colors.black),
+                      strokeWidth: 1.0,
+                    )
+                  ],
+                ),
+              ),
+      ),
+    );
   }
 }
