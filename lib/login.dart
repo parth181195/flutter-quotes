@@ -18,9 +18,11 @@ class LoginPage extends StatefulWidget {
 }
 
 class LoginPageState extends State<LoginPage> {
+  StreamSubscription userLoginSubscription;
+
   Future<bool> _loginUser() async {
     final api = await Fbapi.signInWithGoogle();
-    if (api != null) {
+    if (api) {
       return true;
     } else {
       return false;
@@ -31,74 +33,98 @@ class LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    Fbapi.isLoggedIn().then((val) {
-      print(val);
-      print(DateTime.now());
-      setState(() {
-        authStatus = val ? AuthStatus.loggedin : AuthStatus.notLoggedin;
-        if (authStatus == AuthStatus.loggedin)
-          Navigator.of(context).pushReplacement(
-              new MaterialPageRoute(builder: (context) => new QuotesHome()));
+    userLoginSubscription = Fbapi.auth.onAuthStateChanged.listen((val) {
+      this.setState(() {
+        authStatus = val != null ? AuthStatus.loggedin : AuthStatus.notLoggedin;
       });
     });
   }
 
-  Widget getWidget() {
+  Widget buildWidgets() {
     switch (authStatus) {
       case AuthStatus.notDetermined:
-        return new CircularProgressIndicator();
+        return new CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          strokeWidth: 1.0,
+        );
         break;
       case AuthStatus.loggedin:
+        return new CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          strokeWidth: 1.0,
+        );
         break;
       case AuthStatus.notLoggedin:
-        return getLoginBtn();
+        return buildLoginBtn();
         break;
       default:
     }
   }
 
-  Widget getLoginBtn() {
-    return new Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(25.0),
-      child: InkWell(
+  Widget buildLoginBtn() {
+    return SizedBox(
+      height: 50.0,
+      width: 150.0,
+      child: new Material(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(25.0),
-        child: Stack(
-          fit: StackFit.expand,
-          // crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: new Image.asset('assets/images/glogo.png'),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(25.0),
+          child: Stack(
+            fit: StackFit.expand,
+            // crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: new Image.asset('assets/images/glogo.png'),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 20.0),
-              child: Align(
-                alignment: Alignment.center,
-                child: Text('Login',
-                    // textAlign: TextAlign.center,
-                    style: new TextStyle(
-                        fontFamily: 'Playfair Display',
-                        fontSize: 25.0,
-                        height: 0.5)),
+              Padding(
+                padding: const EdgeInsets.only(left: 20.0),
+                child: Align(
+                  alignment: Alignment.center,
+                  child: Text('Login',
+                      // textAlign: TextAlign.center,
+                      style: new TextStyle(
+                          fontFamily: 'Playfair Display',
+                          fontSize: 25.0,
+                          height: 0.5)),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
+          onTap: () async {
+            setState(() {
+              authStatus = AuthStatus.notDetermined;
+            });
+            await _loginUser().then((val) {
+              if (mounted) {
+                setState(() {
+                  authStatus =
+                      val ? AuthStatus.loggedin : AuthStatus.notLoggedin;
+                });
+              }
+            }).catchError((e) {
+              print(e);
+              if (mounted) {
+                setState(() {
+                  authStatus = AuthStatus.notLoggedin;
+                });
+              }
+            });
+          },
         ),
-        onTap: () async {
-          bool b = await _loginUser();
-          b
-              ? Navigator.of(context).pushReplacement(
-                  new MaterialPageRoute(builder: (context) => new QuotesHome()))
-              : Scaffold.of(context).showSnackBar(SnackBar(
-                  content: Text('worng Email'),
-                ));
-        },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    userLoginSubscription?.cancel();
   }
 
   @override
@@ -132,9 +158,9 @@ class LoginPageState extends State<LoginPage> {
               child: new Image.asset('assets/images/loginbg.png'),
             ),
             new Container(
+                height: 80.0,
                 padding: EdgeInsets.only(bottom: 30.0),
-                child: new SizedBox(
-                    width: 150.0, height: 50.0, child: getWidget()))
+                child: new Container(child: buildWidgets()))
           ],
         ),
       ),

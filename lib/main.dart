@@ -9,16 +9,15 @@ import 'package:quotes/quote-page.dart';
 
 void main() {
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
-    .then((_) {
-      runApp(new MyApp());
-    });
+      .then((_) {
+    runApp(new MyApp());
+  });
 }
 // void main() => runApp(new MyApp());
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    print(DateTime.now());
     return new MaterialApp(
       title: 'Flutter Demo',
       theme: new ThemeData(
@@ -42,22 +41,50 @@ class RootPage extends StatefulWidget {
 
 class _RootPageState extends State<RootPage> {
   AuthStatus authStatus = AuthStatus.notLoggedin;
+  StreamSubscription userLoginSubscription;
+
+  FirebaseUser user;
   @override
   void initState() {
     super.initState();
-    Fbapi.isLoggedIn().then((val) {
-      print(val);
-      print(DateTime.now());
-      setState(() {
-        authStatus = val ? AuthStatus.loggedin : AuthStatus.notLoggedin;
+    userLoginSubscription = Fbapi.auth.onAuthStateChanged.listen((val) {
+      this.setState(() {
+        authStatus = val != null ? AuthStatus.loggedin : AuthStatus.notLoggedin;
       });
     });
   }
 
   @override
-  Widget build(BuildContext context) {
-        return LoginPage();
+  void dispose() {
+    super.dispose();
+    userLoginSubscription?.cancel();
   }
 
+  static logout() async {
+    await Fbapi.logOut().catchError((e)=> print(e));
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    return RootWidget(
+      authStatus: authStatus == AuthStatus.loggedin ? true : false,
+      child: authStatus == AuthStatus.loggedin ? QuotesHome() : LoginPage(),
+    );
+  }
+}
+
+class RootWidget extends InheritedWidget {
+  final bool authStatus;
+  final Widget child;
+  RootWidget({Key key, this.child, this.authStatus})
+      : super(key: key, child: child);
+
+  static RootWidget of(BuildContext context) {
+    return (context.inheritFromWidgetOfExactType(RootWidget) as RootWidget);
+  }
+
+  @override
+  bool updateShouldNotify(RootWidget oldWidget) {
+    return authStatus != oldWidget.authStatus;
+  }
 }

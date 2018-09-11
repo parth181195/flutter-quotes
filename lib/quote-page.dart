@@ -5,8 +5,6 @@ import 'package:quotes/api.dart';
 import 'dart:async';
 import 'dart:math';
 
-import 'package:quotes/login.dart';
-
 class QuotesHome extends StatefulWidget {
   @override
   _QuotesHomeState createState() => new _QuotesHomeState();
@@ -25,13 +23,7 @@ class _QuotesHomeState extends State<QuotesHome> {
   @override
   void initState() {
     super.initState();
-    dataSubscription = quotesRef.snapshots().listen((doc) {
-      setState(() {
-        quotes = doc.documents;
-        pageViewController = new PageController(
-            initialPage: new Random().nextInt(quotes.length));
-      });
-    });
+
     Fbapi.getUser().then((user) {
       usersubscription = userDataRef
           .where('uid', isEqualTo: user.uid)
@@ -46,12 +38,65 @@ class _QuotesHomeState extends State<QuotesHome> {
         });
       });
     });
+    dataSubscription = quotesRef.snapshots().listen((doc) {
+      setState(() {
+        quotes = doc.documents;
+        pageViewController = new PageController(
+            initialPage: new Random().nextInt(quotes.length));
+      });
+    });
   }
 
   String getAuthor(index) {
     return quotes[index].data.containsKey('author')
         ? quotes[index].data['author']
         : 'A wise Person';
+  }
+
+  Widget getBookmarkbar(index) {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+        new IconButton(
+          icon: Icon(
+            bookmarks.contains(
+                    quotes[index].documentID)
+                ? Icons.bookmark
+                : Icons.bookmark_border,
+            color: Colors.black,
+          ),
+          onPressed: () async {
+            print(bookmarks
+                .contains(quotes[index].documentID));
+            Map data = userData.data;
+            if (bookmarks
+                .contains(quotes[index].documentID))
+              data['bookmarks'] = new List.from(bookmarks)
+                ..remove(quotes[index].documentID);
+            else
+              data['bookmarks'] = new List.from(bookmarks)
+                ..add(quotes[index].documentID);
+            setState(() {
+              bookmarks = data['bookmarks'];
+            });
+            userData.reference.updateData(data).whenComplete(() {
+              print('bokkmark added');
+            });
+          },
+        ),
+        new IconButton(
+          icon: Icon(
+            Icons.share,
+            color: Colors.black,
+          ),
+          onPressed: () {
+            Share.share(quotes[index].data['text'] +
+                '\n-' +
+                getAuthor(index));
+          },
+        )
+      ]),
+    );
   }
 
   @override
@@ -83,18 +128,7 @@ class _QuotesHomeState extends State<QuotesHome> {
                 color: Colors.black,
               ),
               onPressed: () async {
-                bool isloggedOut = await Fbapi.logOut();
-                print(isloggedOut);
-                if (isloggedOut) {
-                  Navigator.of(context)
-                      .pushReplacement(new MaterialPageRoute(
-                          builder: (context) => new LoginPage()))
-                      .then((data) {
-                    Scaffold.of(context).showSnackBar(SnackBar(
-                      content: Text('Signed Out'),
-                    ));
-                  });
-                }
+                await Fbapi.logOut().catchError((e) => print(e));
               },
             )
           ],
@@ -144,55 +178,7 @@ class _QuotesHomeState extends State<QuotesHome> {
                                   ),
                                 ],
                               )),
-                          Align(
-                            alignment: Alignment.bottomCenter,
-                            child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  new IconButton(
-                                    icon: Icon(
-                                      bookmarks.contains(
-                                              quotes[index].documentID)
-                                          ? Icons.bookmark
-                                          : Icons.bookmark_border,
-                                      color: Colors.black,
-                                    ),
-                                    onPressed: () async {
-                                      print(bookmarks
-                                          .contains(quotes[index].documentID));
-                                      Map data = userData.data;
-                                      if (bookmarks
-                                          .contains(quotes[index].documentID))
-                                        data['bookmarks'] = new List.from(
-                                            bookmarks)
-                                          ..remove(quotes[index].documentID);
-                                      else
-                                        data['bookmarks'] =
-                                            new List.from(bookmarks)
-                                              ..add(quotes[index].documentID);
-                                      setState(() {
-                                        bookmarks = data['bookmarks'];
-                                      });
-                                      userData.reference
-                                          .updateData(data)
-                                          .whenComplete(() {
-                                        print('bokkmark added');
-                                      });
-                                    },
-                                  ),
-                                  new IconButton(
-                                    icon: Icon(
-                                      Icons.share,
-                                      color: Colors.black,
-                                    ),
-                                    onPressed: () {
-                                      Share.share(quotes[index].data['text'] +
-                                          '\n-' + getAuthor(index)
-);
-                                    },
-                                  )
-                                ]),
-                          )
+                              getBookmarkbar(index)
                         ]),
                       );
                     },
