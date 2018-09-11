@@ -20,6 +20,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return new MaterialApp(
       title: 'Flutter Demo',
+      builder: (context, child) {
+        return ScrollConfiguration(
+          behavior: MyBehavior(),
+          child: child,
+        );
+      },
       theme: new ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -32,6 +38,14 @@ enum AuthStatus {
   loggedin,
   notLoggedin,
   notDetermined,
+}
+
+class MyBehavior extends ScrollBehavior {
+  @override
+  Widget buildViewportChrome(
+      BuildContext context, Widget child, AxisDirection axisDirection) {
+    return child;
+  }
 }
 
 class RootPage extends StatefulWidget {
@@ -61,7 +75,7 @@ class _RootPageState extends State<RootPage> {
   }
 
   static logout() async {
-    await Fbapi.logOut().catchError((e)=> print(e));
+    await Fbapi.logOut().catchError((e) => print(e));
   }
 
   @override

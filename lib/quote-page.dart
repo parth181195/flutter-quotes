@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share/share.dart';
 import 'package:quotes/api.dart';
@@ -23,7 +24,6 @@ class _QuotesHomeState extends State<QuotesHome> {
   @override
   void initState() {
     super.initState();
-
     Fbapi.getUser().then((user) {
       usersubscription = userDataRef
           .where('uid', isEqualTo: user.uid)
@@ -148,6 +148,7 @@ class _QuotesHomeState extends State<QuotesHome> {
             color: Colors.white,
             child: quotes != null
                 ? PageView.builder(
+                    physics: BouncingScrollPhysics(),
                     controller: pageViewController,
                     itemCount: quotes.length,
                     itemBuilder: (context, index) {
