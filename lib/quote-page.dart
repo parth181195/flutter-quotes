@@ -95,17 +95,16 @@ class _QuotesWidgetState extends State<QuotesWidget> {
 
   Future<String> get _localPath async {
     final directory = await getExternalStorageDirectory();
-    Directory quoteFolder = Directory('${directory.path}/quotes');
+    Directory quoteFolder = Directory('${directory.path}');
     if (!quoteFolder.existsSync()) {
       quoteFolder.createSync();
     }
-    print(directory.createTemp());
     return directory.path;
   }
 
   Future<File> get _localFile async {
     final path = await _localPath;
-    return File('$path/quotes/share.png');
+    return File('$path/share.png');
   }
 
   Future<File> _capturePng() async {
@@ -119,17 +118,16 @@ class _QuotesWidgetState extends State<QuotesWidget> {
           await image.toByteData(format: ui.ImageByteFormat.png);
       var pngBytes = byteData.buffer.asUint8List();
       debugPrint(base64Encode(pngBytes));
-
       final file = await _localFile;
-
-      // Write the file
-      print(_localFile.toString());
-      print(_localPath.toString());
-      print(file.path);
       file.writeAsBytesSync(pngBytes);
       Scaffold.of(context).showSnackBar(SnackBar(
         content: Text('Image Stored at ${file.path}'),
-        action:SnackBarAction(label: 'open image',onPressed: (){OpenFile.open(file.path);},),
+        action: SnackBarAction(
+          label: 'open image',
+          onPressed: () {
+            OpenFile.open(file.path).catchError((e) => print(e));
+          },
+        ),
       ));
       setState(() {});
       return file;
@@ -185,7 +183,7 @@ class _QuotesWidgetState extends State<QuotesWidget> {
             color: Colors.black,
           ),
           onPressed: () {
-            // Share.share(quotes[index].data['text'] + '\n-' + getAuthor(index));
+            Share.share(quotes[index].data['text'] + '\n-' + getAuthor(index));
           },
         )
       ]),
@@ -207,48 +205,25 @@ class _QuotesWidgetState extends State<QuotesWidget> {
         // padding:
         color: Colors.white,
         child: quotes != null
-            ? PageView.builder(
-                physics: BouncingScrollPhysics(),
-                controller: pageViewController,
-                itemCount: quotes.length,
-                itemBuilder: (context, index) {
-                  return new Stack(fit: StackFit.expand, children: <Widget>[
-                    RepaintBoundary(
-                        key: _globalKey,
-                        child: Container(
-                          padding: EdgeInsets.all(20.0),
-                          color: Colors.white,
-                          child: Align(
-                              alignment: Alignment.center,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: <Widget>[
-                                  Text(quotes[index].data['text'],
-                                      style: new TextStyle(
-                                          fontFamily: 'Playfair Display',
-                                          fontSize: 40.0)),
-                                  Padding(
-                                    padding: EdgeInsets.all(10.0),
-                                  ),
-                                  Text(getAuthor(index),
-                                      style: new TextStyle(
-                                          fontFamily: 'Playfair Display',
-                                          color: Color(0xffaaaaaa),
-                                          fontSize: 20.0)),
-                                  Padding(
-                                    padding: EdgeInsets.all(30.0),
-                                  ),
-                                ],
-                              )),
-                        )),
-                    Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: getBookmarkbar(index),
-                    )
-                  ]);
-                },
-              )
+            ? RepaintBoundary(
+                key: _globalKey,
+                child: PageView.builder(
+                  physics: BouncingScrollPhysics(),
+                  controller: pageViewController,
+                  itemCount: quotes.length,
+                  itemBuilder: (context, index) {
+                    return new Stack(fit: StackFit.expand, children: <Widget>[
+                      Quotetext(
+                        text: quotes[index].data['text'],
+                        author: getAuthor(index),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: getBookmarkbar(index),
+                      )
+                    ]);
+                  },
+                ))
             : Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -261,6 +236,41 @@ class _QuotesWidgetState extends State<QuotesWidget> {
                 ),
               ),
       ),
+    );
+  }
+}
+
+class Quotetext extends StatelessWidget {
+  final String text;
+  final String author;
+  Quotetext({this.text, this.author});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(20.0),
+      color: Colors.white,
+      child: Align(
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(text,
+                  style: new TextStyle(
+                      fontFamily: 'Playfair Display', fontSize: 40.0)),
+              Padding(
+                padding: EdgeInsets.all(10.0),
+              ),
+              Text(author,
+                  style: new TextStyle(
+                      fontFamily: 'Playfair Display',
+                      color: Color(0xffaaaaaa),
+                      fontSize: 20.0)),
+              Padding(
+                padding: EdgeInsets.all(30.0),
+              ),
+            ],
+          )),
     );
   }
 }
