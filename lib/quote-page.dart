@@ -6,10 +6,12 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:simple_permissions/simple_permissions.dart';
 import 'package:open_file/open_file.dart';
 import 'package:share/share.dart';
 import 'package:quotes/api.dart';
@@ -64,6 +66,7 @@ class _QuotesWidgetState extends State<QuotesWidget> {
   CollectionReference quotesRef = Firestore.instance.collection('quotes');
   List<DocumentSnapshot> quotes;
   DocumentSnapshot userData;
+  Permission permission;
   List<dynamic> bookmarks = [];
   GlobalKey _globalKey = new GlobalKey();
 
@@ -91,6 +94,71 @@ class _QuotesWidgetState extends State<QuotesWidget> {
             initialPage: new Random().nextInt(quotes.length));
       });
     });
+  }
+
+  Future<bool> checkIoPermission() async {
+    bool readFile = false;
+    bool writeFile = false;
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      await SimplePermissions.checkPermission(Permission.ReadExternalStorage)
+          .then((val) async {
+        print('read$val');
+        if (val) {
+          readFile = val;
+        } else {
+          await SimplePermissions.requestPermission(
+                  Permission.ReadExternalStorage)
+              .then((newVal) {
+            print('new read $newVal');
+            if (newVal) {
+              readFile = newVal;
+            }
+          });
+        }
+      });
+      await SimplePermissions.checkPermission(Permission.WriteExternalStorage)
+          .then((val) async {
+        print('write$val');
+        if (val) {
+          writeFile = val;
+        } else {
+          await SimplePermissions.requestPermission(
+                  Permission.WriteExternalStorage)
+              .then((newVal) {
+            print('new write$newVal');
+            if (newVal) {
+              writeFile = newVal;
+            }
+          });
+        }
+      });
+      print('final read$readFile');
+      print('final write$writeFile');
+    } on PlatformException {
+      await SimplePermissions.requestPermission(Permission.ReadExternalStorage)
+          .then((val) {
+        print('new read $val');
+        if (val) {
+          readFile = val;
+        }
+      });
+      await SimplePermissions.requestPermission(Permission.WriteExternalStorage)
+          .then((val) {
+        print('new write$val');
+        if (val) {
+          writeFile = val;
+        }
+      });
+    }
+    print('return');
+    print(readFile && writeFile && writeFile != false);
+    if (readFile && writeFile && writeFile != false) {
+      await _capturePng();
+    }
+    if (!mounted) return readFile && writeFile && writeFile != false;
+
+    setState(() {});
   }
 
   Future<String> get _localPath async {
@@ -151,7 +219,7 @@ class _QuotesWidgetState extends State<QuotesWidget> {
             Icons.file_download,
             color: Colors.black,
           ),
-          onPressed: _capturePng,
+          onPressed: checkIoPermission,
         ),
         new IconButton(
           icon: Icon(

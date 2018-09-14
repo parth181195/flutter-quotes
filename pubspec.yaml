@@ -18,6 +18,7 @@ dependencies:
   firebase_core: 0.2.4
   share: ^0.5.3
   open_file: ^1.0.7
+  simple_permissions: ^0.1.6
   path_provider: 
   # flutter_share: ^0.0.4
   # The following adds the Cupertino Icons font to your application.
