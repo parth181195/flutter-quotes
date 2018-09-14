@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:quotes/api.dart';
 import 'dart:async';
 
-import 'package:quotes/quote-page.dart';
-
 enum AuthStatus {
   loggedin,
   notLoggedin,
@@ -43,16 +41,10 @@ class LoginPageState extends State<LoginPage> {
   Widget buildWidgets() {
     switch (authStatus) {
       case AuthStatus.notDetermined:
-        return new CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          strokeWidth: 1.0,
-        );
+        return buildLoader();
         break;
       case AuthStatus.loggedin:
-        return new CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          strokeWidth: 1.0,
-        );
+        return buildLoader();
         break;
       case AuthStatus.notLoggedin:
         return buildLoginBtn();
@@ -61,60 +53,73 @@ class LoginPageState extends State<LoginPage> {
     }
   }
 
-  Widget buildLoginBtn() {
-    return SizedBox(
-      height: 50.0,
-      width: 150.0,
-      child: new Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(25.0),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(25.0),
-          child: Stack(
-            fit: StackFit.expand,
-            // crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: new Image.asset('assets/images/glogo.png'),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 20.0),
-                child: Align(
-                  alignment: Alignment.center,
-                  child: Text('Login',
-                      // textAlign: TextAlign.center,
-                      style: new TextStyle(
-                          fontFamily: 'Playfair Display',
-                          fontSize: 25.0,
-                          height: 0.5)),
-                ),
-              ),
-            ],
+  Widget buildLoader() {
+   return Container(
+          padding: EdgeInsets.only(bottom: 30.0),
+          child: new CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            strokeWidth: 1.0,
           ),
-          onTap: () async {
-            setState(() {
-              authStatus = AuthStatus.notDetermined;
-            });
-            await _loginUser().then((val) {
-              if (mounted) {
-                setState(() {
-                  authStatus =
-                      val ? AuthStatus.loggedin : AuthStatus.notLoggedin;
-                });
-              }
-            }).catchError((e) {
-              print(e);
-              if (mounted) {
-                setState(() {
-                  authStatus = AuthStatus.notLoggedin;
-                });
-              }
-            });
-          },
+        );
+  }
+
+  Widget buildLoginBtn() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 30.0),
+      child: SizedBox(
+        height: 50.0,
+        width: 150.0,
+        child: new Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(25.0),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(25.0),
+            child: Stack(
+              fit: StackFit.expand,
+              // crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: new Image.asset('assets/images/glogo.png'),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 20.0),
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Text('Login',
+                        // textAlign: TextAlign.center,
+                        style: new TextStyle(
+                            fontFamily: 'Playfair Display',
+                            fontSize: 25.0,
+                            height: 0.5)),
+                  ),
+                ),
+              ],
+            ),
+            onTap: () async {
+              setState(() {
+                authStatus = AuthStatus.notDetermined;
+              });
+              await _loginUser().then((val) {
+                if (mounted) {
+                  setState(() {
+                    authStatus =
+                        val ? AuthStatus.loggedin : AuthStatus.notLoggedin;
+                  });
+                }
+              }).catchError((e) {
+                print(e);
+                if (mounted) {
+                  setState(() {
+                    authStatus = AuthStatus.notLoggedin;
+                  });
+                }
+              });
+            },
+          ),
         ),
       ),
     );
@@ -157,10 +162,7 @@ class LoginPageState extends State<LoginPage> {
               padding: const EdgeInsets.all(15.0),
               child: new Image.asset('assets/images/loginbg.png'),
             ),
-            new Container(
-                height: 80.0,
-                padding: EdgeInsets.only(bottom: 30.0),
-                child: new Container(child: buildWidgets()))
+            buildWidgets()
           ],
         ),
       ),
